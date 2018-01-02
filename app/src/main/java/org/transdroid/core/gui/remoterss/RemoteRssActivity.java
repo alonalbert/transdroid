@@ -25,32 +25,38 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Bean;
-import org.androidannotations.annotations.EActivity;
-import org.androidannotations.annotations.FragmentById;
-import org.androidannotations.annotations.InstanceState;
-import org.androidannotations.annotations.ItemClick;
-import org.androidannotations.annotations.OptionsItem;
-import org.androidannotations.annotations.ViewById;
-import org.transdroid.R;
-import org.transdroid.core.app.settings.ApplicationSettings;
-import org.transdroid.core.app.settings.ServerSetting;
-import org.transdroid.core.app.settings.SystemSettings_;
-import org.transdroid.core.gui.lists.SimpleListItemAdapter;
-import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
-import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
-import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
-import org.transdroid.core.service.ConnectivityHelper;
-import org.transdroid.daemon.IDaemonAdapter;
-
+import com.nispok.snackbar.Snackbar;
+import com.nispok.snackbar.SnackbarManager;
+import com.nispok.snackbar.enums.SnackbarType;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import org.androidannotations.annotations.AfterViews;
+import org.androidannotations.annotations.Background;
+import org.androidannotations.annotations.Bean;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.FragmentById;
+import org.androidannotations.annotations.InstanceState;
+import org.androidannotations.annotations.ItemClick;
+import org.androidannotations.annotations.OptionsItem;
+import org.androidannotations.annotations.UiThread;
+import org.androidannotations.annotations.ViewById;
+import org.transdroid.R;
+import org.transdroid.core.app.settings.ApplicationSettings;
+import org.transdroid.core.app.settings.ServerSetting;
+import org.transdroid.core.app.settings.SystemSettings_;
+import org.transdroid.core.gui.lists.LocalTorrent;
+import org.transdroid.core.gui.lists.SimpleListItemAdapter;
+import org.transdroid.core.gui.log.Log;
+import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
+import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
+import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
+import org.transdroid.core.service.ConnectivityHelper;
+import org.transdroid.daemon.DaemonException;
+import org.transdroid.daemon.IDaemonAdapter;
 
 /**
  * An activity that displays a list of {@link RemoteRssItem}s via an instance of {@link RemoteRssFragment}.
@@ -72,6 +78,8 @@ public class RemoteRssActivity extends AppCompatActivity {
 	// Server connection
 	@Bean
 	protected ApplicationSettings applicationSettings;
+	@Bean
+	protected Log log;
 	@Bean
 	protected ConnectivityHelper connectivityHelper;
 	private IDaemonAdapter currentConnection;
@@ -101,6 +109,7 @@ public class RemoteRssActivity extends AppCompatActivity {
 	}
 
 	@AfterViews
+	@Background
 	protected void init() {
 		// Simple action bar with up, torrent name as title and refresh button
 		torrentsToolbar.setNavigationIcon(R.drawable.ic_action_drawer);
@@ -110,13 +119,26 @@ public class RemoteRssActivity extends AppCompatActivity {
 		// Connect to the last used server
 		ServerSetting lastUsed = applicationSettings.getLastUsedServer();
 		currentConnection = lastUsed.createServerAdapter(connectivityHelper.getConnectedNetworkName(), this);
-		feeds = ((RemoteRssSupplier) (currentConnection)).getRemoteRssChannels();
+		try {
+			feeds = ((RemoteRssSupplier) (currentConnection)).getRemoteRssChannels(log);
+		} catch (DaemonException e) {
+			onCommunicationError(e);
+			return;
+		}
 
 		// Fill in the filter list
 		showChannelFilters();
 
 		// Show all items
 		showRecentItems();
+	}
+
+	@UiThread
+	protected void onCommunicationError(DaemonException daemonException) {
+		//noinspection ThrowableResultOfMethodCallIgnored
+		log.i(this, daemonException.toString());
+		String error = getString(LocalTorrent.getResourceForDaemonException(daemonException));
+		SnackbarManager.show(Snackbar.with(this).text(error).colorResource(R.color.red).type(SnackbarType.MULTI_LINE));
 	}
 
 
@@ -139,6 +161,7 @@ public class RemoteRssActivity extends AppCompatActivity {
 		}
 	}
 
+	@UiThread
 	protected void showRecentItems() {
 		if (recentItems == null) {
 			recentItems = new ArrayList<>();
@@ -168,6 +191,7 @@ public class RemoteRssActivity extends AppCompatActivity {
 		getSupportActionBar().setSubtitle(channel.getName());
 	}
 
+	@UiThread
 	protected void showChannelFilters() {
 		List<RemoteRssChannel> feedLabels = new ArrayList<>(feeds.size() +1);
 		feedLabels.add(new RemoteRssChannel() {

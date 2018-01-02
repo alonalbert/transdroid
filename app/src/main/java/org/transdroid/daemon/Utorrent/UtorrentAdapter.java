@@ -657,7 +657,7 @@ public class UtorrentAdapter implements IDaemonAdapter, RemoteRssSupplier {
 		return this.settings;
 	}
 
-	public ArrayList<RemoteRssChannel> getRemoteRssChannels() {
+	public ArrayList<RemoteRssChannel> getRemoteRssChannels(Log log) {
 		return remoteRssChannels;
 	}
 }

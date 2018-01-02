@@ -25,6 +25,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,11 +34,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.base64.android.Base64;
 import org.transdroid.core.gui.log.Log;
+import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
+import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
 import org.transdroid.daemon.Daemon;
 import org.transdroid.daemon.DaemonException;
 import org.transdroid.daemon.DaemonException.ExceptionType;
@@ -74,7 +79,7 @@ import org.transdroid.daemon.task.SetTransferRatesTask;
  *
  * @author alon.albert
  */
-public class DelugeRpcAdapter implements IDaemonAdapter {
+public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
 
   public static final int DEFAULT_PORT = 58846;
 
@@ -97,6 +102,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter {
   private static final String RPC_METHOD_SETTRACKERS = "core.set_torrent_trackers";
   private static final String RPC_METHOD_FORCERECHECK = "core.force_recheck";
   private static final String RPC_METHOD_SETLABEL = "label.set_torrent";
+  private static final String RPC_METHOD_GET_RSS_CONFIG = "yarss2.get_config";
 
   private static final String RPC_HASH = "hash";
   private static final String RPC_NAME = "name";
@@ -132,6 +138,8 @@ public class DelugeRpcAdapter implements IDaemonAdapter {
 
   private static final String RPC_MAX_DOWNLOAD = "max_download_speed";
   private static final String RPC_MAX_UPLOAD = "max_upload_speed";
+
+  private static final String RPC_RSSFEEDS = "rssfeeds";
 
   private static final String[] TORRENT_FIELDS = {
       RPC_HASH,
@@ -649,5 +657,35 @@ public class DelugeRpcAdapter implements IDaemonAdapter {
   @NonNull
   private Object getTorrentIdsArg(DaemonTask task) {
     return new String[]{task.getTargetTorrent().getUniqueID()};
+  }
+
+  @Override
+  public ArrayList<RemoteRssChannel> getRemoteRssChannels(Log log) throws DaemonException {
+    //noinspection unchecked
+    final Map<String, Object> rssConfig = (Map<String, Object>) client.sendRequest(RPC_METHOD_GET_RSS_CONFIG);
+
+    //noinspection unchecked
+    final Map<String, Map<String, Object>> rssFeeds = (Map<String, Map<String, Object>>) rssConfig.get(RPC_RSSFEEDS);
+
+    final SimpleDateFormat formatter = new SimpleDateFormat("YYYY-MM-dd'T'HH:mm:ss", Locale.getDefault());
+
+    final ArrayList<RemoteRssChannel> channels = new ArrayList<>();
+
+    for (Map<String, Object> feed : rssFeeds.values()) {
+      long lastUpdate;
+      try {
+        lastUpdate = formatter.parse((String) feed.get("last_update")).getTime();
+      } catch (ParseException e) {
+        log.e(this, "Error parsing last update time of rss feed");
+        lastUpdate = 0;
+      }
+      channels.add(new DelugeRemoteRssChannel(
+          Integer.valueOf(feed.get("key").toString()),
+          (String) feed.get("name"),
+          (String) feed.get("url"),
+          lastUpdate));
+    }
+
+    return channels;
   }
 }
