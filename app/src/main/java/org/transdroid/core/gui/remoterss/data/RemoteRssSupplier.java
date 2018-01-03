@@ -12,5 +12,5 @@ import org.transdroid.daemon.DaemonException;
 public interface RemoteRssSupplier {
     ArrayList<RemoteRssChannel> getRemoteRssChannels(Log log) throws DaemonException;
 
-    void downloadItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException;
+    void downloadRemoteRssItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException;
 }

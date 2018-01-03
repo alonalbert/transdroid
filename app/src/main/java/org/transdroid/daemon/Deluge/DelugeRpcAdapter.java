@@ -268,7 +268,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
   }
 
   @Override
-  public void downloadItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException {
+  public void downloadRemoteRssItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException {
     final DelugeRemoteRssItem item = (DelugeRemoteRssItem) rssItem;
     final DelugeRemoteRssChannel channel = (DelugeRemoteRssChannel) rssChannel;
 
@@ -282,7 +282,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
       final String moveCompleted = channel.getMoveCompleted();
       if (moveCompleted != null) {
         options.put(RPC_MOVE_COMPLETED, true);
-        options.put(RPC_MOVE_COMPLETED_PATH, true);
+        options.put(RPC_MOVE_COMPLETED_PATH, moveCompleted);
       }
       label = channel.getLabel();
     } else {

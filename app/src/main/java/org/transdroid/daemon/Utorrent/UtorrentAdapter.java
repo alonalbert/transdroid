@@ -663,7 +663,12 @@ public class UtorrentAdapter implements IDaemonAdapter, RemoteRssSupplier {
 	}
 
   @Override
-  public void downloadItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException {
-
-  }
+  public void downloadRemoteRssItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException {
+		final String link = rssItem.getLink();
+		try {
+			makeUtorrentRequest(log, "&action=add-url&s=" + URLEncoder.encode(link, "UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			throw new DaemonException(ExceptionType.ParsingFailed, "Invalid URL: " + link);
+		}
+	}
 }

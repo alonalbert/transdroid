@@ -129,7 +129,7 @@ public class RemoteRssFragment extends Fragment {
 		final RemoteRssSupplier supplier = (RemoteRssSupplier) activity.getCurrentConnection();
 
 		try {
-			supplier.downloadItem(log, item, activity.getChannel(item.getSourceName()));
+			supplier.downloadRemoteRssItem(log, item, activity.getChannel(item.getSourceName()));
 			onTaskSucceeded(null, getString(R.string.result_added, item.getTitle()));
 		} catch (DaemonException e) {
 			onTaskFailed(getString(LocalTorrent.getResourceForDaemonException(e)));
