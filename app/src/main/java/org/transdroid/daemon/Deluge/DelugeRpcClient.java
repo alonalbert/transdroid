@@ -17,9 +17,12 @@
  */
 package org.transdroid.daemon.Deluge;
 
-import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_DAEMON_LOGIN;
-
 import android.support.annotation.NonNull;
+
+import org.transdroid.daemon.DaemonException;
+import org.transdroid.daemon.DaemonException.ExceptionType;
+import org.transdroid.daemon.util.IgnoreSSLTrustManager;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,12 +35,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import org.transdroid.daemon.DaemonException;
-import org.transdroid.daemon.DaemonException.ExceptionType;
-import org.transdroid.daemon.util.IgnoreSSLTrustManager;
+
 import se.dimovski.rencode.Rencode;
+
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_DAEMON_LOGIN;
 
 /**
  * A Deluge RPC API Client.
@@ -70,7 +74,9 @@ class DelugeRpcClient implements Closeable {
 
   public void close() {
     try {
-      socket.close();
+      if (socket != null) {
+        socket.close();
+      }
     } catch (IOException e) {
       // ignore
     }

@@ -48,6 +48,7 @@ import org.transdroid.core.app.settings.SystemSettings_;
 import org.transdroid.core.gui.lists.LocalTorrent;
 import org.transdroid.core.gui.lists.SimpleListItemAdapter;
 import org.transdroid.core.gui.log.Log;
+import org.transdroid.core.gui.navigation.RefreshableActivity;
 import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
 import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
 import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
@@ -71,7 +72,7 @@ import java.util.List;
  * @author Twig Nguyen
  */
 @EActivity(R.layout.activity_remoterss)
-public class RemoteRssActivity extends AppCompatActivity {
+public class RemoteRssActivity extends AppCompatActivity implements RefreshableActivity {
 	@NonConfigurationInstance
 	protected ArrayList<RemoteRssChannel> feeds;
 
@@ -243,5 +244,18 @@ public class RemoteRssActivity extends AppCompatActivity {
 			}
 		}
 		return null;
+	}
+
+	@Override
+	@Background
+	public void refreshScreen() {
+		try {
+			feeds = ((RemoteRssSupplier) (currentConnection)).getRemoteRssChannels(log);
+		} catch (DaemonException e) {
+			onCommunicationError(e);
+			return;
+		}
+		showChannelFilters();
+		onFeedSelected(0);
 	}
 }

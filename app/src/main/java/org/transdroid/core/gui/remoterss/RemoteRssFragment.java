@@ -40,6 +40,7 @@ import org.androidannotations.annotations.ViewById;
 import org.transdroid.R;
 import org.transdroid.core.gui.lists.LocalTorrent;
 import org.transdroid.core.gui.log.Log;
+import org.transdroid.core.gui.navigation.RefreshableActivity;
 import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
 import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
 import org.transdroid.daemon.DaemonException;
@@ -102,6 +103,17 @@ public class RemoteRssFragment extends Fragment {
 		// Restore the fragment state (on orientation changes et al.)
 		if (remoteRssItems != null) {
 			updateRemoteItems(remoteRssItems);
+		}
+
+		// Allow pulls on the list view to refresh the torrents
+		if (getActivity() != null && getActivity() instanceof RefreshableActivity) {
+			swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+				@Override
+				public void onRefresh() {
+					((RefreshableActivity) getActivity()).refreshScreen();
+					swipeRefreshLayout.setRefreshing(false);
+				}
+			});
 		}
 	}
 
