@@ -18,6 +18,7 @@
 package org.transdroid.daemon.Deluge;
 
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DETAILS;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DETAILS_FIELDS_ARRAY;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DOWNLOADEDEVER;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_ETA;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_FIELDS_ARRAY;
@@ -61,7 +62,6 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RSSFEEDS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SAVEPATH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SIZE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_STATUS;
-import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DETAILS_FIELDS_ARRAY;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TIMEADDED;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALPEERS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALSEEDS;
@@ -93,10 +93,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import javax.xml.parsers.ParserConfigurationException;
 import org.base64.android.Base64;
 import org.transdroid.core.gui.log.Log;
 import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
+import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
 import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
+import org.transdroid.core.rssparser.Channel;
+import org.transdroid.core.rssparser.Item;
+import org.transdroid.core.rssparser.RssParser;
 import org.transdroid.daemon.Daemon;
 import org.transdroid.daemon.DaemonException;
 import org.transdroid.daemon.DaemonException.ExceptionType;
@@ -127,6 +132,7 @@ import org.transdroid.daemon.task.SetFilePriorityTask;
 import org.transdroid.daemon.task.SetLabelTask;
 import org.transdroid.daemon.task.SetTrackersTask;
 import org.transdroid.daemon.task.SetTransferRatesTask;
+import org.xml.sax.SAXException;
 
 /**
  * The daemon adapter from the Deluge torrent client using deluged API directly.
@@ -212,6 +218,11 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
     final DelugeRpcClient client = new DelugeRpcClient();
     try {
       client.connect(settings.getAddress(), settings.getPort(), settings.getUsername(), settings.getPassword());
+
+      final List<String> methods = (List<String>) client.sendRequest(RPC_METHOD_GET_METHOD_LIST);
+      if (!methods.contains(RPC_METHOD_GET_RSS_CONFIG)) {
+        throw new DaemonException(ExceptionType.MethodUnsupported, "YaRRS2 plugin not installed");
+      }
       //noinspection unchecked
       final Map<String, Object> rssConfig = (Map<String, Object>) client.sendRequest(RPC_METHOD_GET_RSS_CONFIG);
 
@@ -222,6 +233,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
 
       final ArrayList<RemoteRssChannel> channels = new ArrayList<>();
 
+      final long now = System.currentTimeMillis();
       for (Map<String, Object> feed : rssFeeds.values()) {
         long lastUpdate;
         try {
@@ -230,13 +242,16 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
           log.e(this, "Error parsing last update time of rss feed");
           lastUpdate = 0;
         }
-        channels.add(new DelugeRemoteRssChannel(
-            Integer.valueOf(feed.get("key").toString()),
-            (String) feed.get("name"),
-            (String) feed.get("url"),
-            lastUpdate));
-      }
+        final String feedUrl = (String) feed.get("url");
+        final String feedName = (String) feed.get("name");
+        final Integer key = Integer.valueOf(feed.get("key").toString());
 
+        final List<RemoteRssItem> items = new ArrayList<>();
+        for (Item item : getRssFeedItems(feedUrl, log)) {
+          items.add(new DelugeRemoteRssItem(item.getTitle(), item.getLink(), feedName, item.getPubdate()));
+        }
+        channels.add(new DelugeRemoteRssChannel(key, feedName, feedUrl, now, items));
+      }
       return channels;
     } finally {
       client.close();
@@ -580,6 +595,23 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
   @NonNull
   private Object getTorrentIdsArg(DaemonTask task) {
     return new String[]{task.getTargetTorrent().getUniqueID()};
+  }
+
+  @NonNull
+  private List<Item> getRssFeedItems(String feedUrl, Log log) {
+    final RssParser rssParser = new RssParser(feedUrl, null, null);
+    try {
+      rssParser.parse();
+      final Channel channel = rssParser.getChannel();
+      return channel.getItems();
+    } catch (ParserConfigurationException e) {
+      log.e(DelugeRpcAdapter.this, "Failed to parse RSS feed.");
+    } catch (SAXException e) {
+      log.e(DelugeRpcAdapter.this, "Failed to parse RSS feed.");
+    } catch (IOException e) {
+      log.e(DelugeRpcAdapter.this, "Failed to load RSS feed.");
+    }
+    return new ArrayList<>();
   }
 
   /**

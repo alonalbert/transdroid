@@ -31,7 +31,6 @@
             android:id="@+id/torrents_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:choiceMode="multipleChoiceModal"
             android:clipToPadding="false"
             tools:listitem="@layout/list_item_remoterssitem"
             tools:visibility="visible"/>
