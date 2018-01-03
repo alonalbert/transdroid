@@ -74,7 +74,7 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALSEEDS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALSIZE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKERS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKER_STATUS;
-import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKER_TIER;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TIER;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_URL;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_UPLOADEDEVER;
 
@@ -312,7 +312,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
 
     // Check if Label plugin is enabled
 
-    final boolean hasLabelPlugin = hasMethod(client, RPC_METHOD_GET_LABELS);
+    final boolean hasLabelPlugin = hasMethod(client,RPC_METHOD_GET_LABELS);
 
     // Get label list from server
     //noinspection unchecked
@@ -397,7 +397,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
   @NonNull
   private DaemonTaskResult doSetLabel(DelugeRpcClient client, SetLabelTask task) throws DaemonException {
     if (!hasMethod(client, RPC_METHOD_SETLABEL)) {
-      throw new DaemonException(ExceptionType.MethodUnsupported, "Label method not installed");
+      throw new DaemonException(ExceptionType.MethodUnsupported, "Label plugin not installed");
     }
     final String torrentId = task.getTargetTorrent().getUniqueID();
     final String label = task.getNewLabel() == null ? "" : task.getNewLabel();
@@ -449,7 +449,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
     final ArrayList<String> newTrackers = task.getNewTrackers();
     for (int i = 0, n = newTrackers.size(); i < n; i++) {
       final Map<String, Object> tracker = new HashMap<>();
-      tracker.put(RPC_TRACKER_TIER, i);
+      tracker.put(RPC_TIER, i);
       tracker.put(RPC_URL, newTrackers.get(i));
       trackers.add(tracker);
     }

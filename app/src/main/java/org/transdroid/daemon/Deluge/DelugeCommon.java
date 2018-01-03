@@ -96,134 +96,134 @@ class DelugeCommon {
     static final String RPC_URL = "url";
     static final String RPC_UPLOADEDEVER = "total_uploaded";
 
-    static final String[] RPC_DETAILS_FIELDS_ARRAY = {
-        RPC_TRACKERS,
-        RPC_TRACKER_STATUS,
-    };
-    static final String[] RPC_FIELDS_ARRAY = {
-        RPC_HASH,
-        RPC_NAME,
-        RPC_STATUS,
-        RPC_SAVEPATH,
-        RPC_RATEDOWNLOAD,
-        RPC_RATEUPLOAD,
-        RPC_NUMPEERS,
-        RPC_NUMSEEDS,
-        RPC_TOTALPEERS,
-        RPC_TOTALSEEDS,
-        RPC_ETA,
-        RPC_DOWNLOADEDEVER,
-        RPC_UPLOADEDEVER,
-        RPC_TOTALSIZE,
-        RPC_PARTDONE,
-        RPC_LABEL,
-        RPC_MESSAGE,
-        RPC_TIMEADDED,
-        RPC_TRACKER_STATUS,
-    };
-    static final String[] RPC_FILE_FIELDS_ARRAY = {
-        RPC_DETAILS,
-        RPC_FILEPROGRESS,
-        RPC_FILEPRIORITIES,
-    };
+  static final String[] RPC_DETAILS_FIELDS_ARRAY = {
+      RPC_TRACKERS,
+      RPC_TRACKER_STATUS,
+  };
+  static final String[] RPC_FIELDS_ARRAY = {
+      RPC_HASH,
+      RPC_NAME,
+      RPC_STATUS,
+      RPC_SAVEPATH,
+      RPC_RATEDOWNLOAD,
+      RPC_RATEUPLOAD,
+      RPC_NUMPEERS,
+      RPC_NUMSEEDS,
+      RPC_TOTALPEERS,
+      RPC_TOTALSEEDS,
+      RPC_ETA,
+      RPC_DOWNLOADEDEVER,
+      RPC_UPLOADEDEVER,
+      RPC_TOTALSIZE,
+      RPC_PARTDONE,
+      RPC_LABEL,
+      RPC_MESSAGE,
+      RPC_TIMEADDED,
+      RPC_TRACKER_STATUS,
+  };
+  static final String[] RPC_FILE_FIELDS_ARRAY = {
+      RPC_DETAILS,
+      RPC_FILEPROGRESS,
+      RPC_FILEPRIORITIES,
+  };
 
-    static TorrentStatus convertDelugeState(String state) {
-      // Deluge sends a string with status code
-      if (state.compareTo("Paused") == 0) {
-        return TorrentStatus.Paused;
-      } else if (state.compareTo("Seeding") == 0) {
-        return TorrentStatus.Seeding;
-      } else if (state.compareTo("Downloading") == 0 || state.compareTo("Active") == 0) {
-        return TorrentStatus.Downloading;
-      } else if (state.compareTo("Checking") == 0) {
-        return TorrentStatus.Checking;
-      } else if (state.compareTo("Queued") == 0) {
-        return TorrentStatus.Queued;
-      }
-      return TorrentStatus.Unknown;
+  static TorrentStatus convertDelugeState(String state) {
+    // Deluge sends a string with status code
+    if (state.compareTo("Paused") == 0) {
+      return TorrentStatus.Paused;
+    } else if (state.compareTo("Seeding") == 0) {
+      return TorrentStatus.Seeding;
+    } else if (state.compareTo("Downloading") == 0 || state.compareTo("Active") == 0) {
+      return TorrentStatus.Downloading;
+    } else if (state.compareTo("Checking") == 0) {
+      return TorrentStatus.Checking;
+    } else if (state.compareTo("Queued") == 0) {
+      return TorrentStatus.Queued;
     }
+    return TorrentStatus.Unknown;
+  }
 
-    @NonNull
-    static Priority convertDelugePriority(int priority, int version) {
-      if (version >= 10303) {
-        // Priority codes changes from Deluge 1.3.3 onwards
-        switch (priority) {
-          case 0:
-            return Priority.Off;
-          case 1:
-            return Priority.Low;
-          case 7:
-            return Priority.High;
-          default:
-            return Priority.Normal;
-        }
-      } else {
-        switch (priority) {
-          case 0:
-            return Priority.Off;
-          case 2:
-            return Priority.Normal;
-          case 5:
-            return Priority.High;
-          default:
-            return Priority.Low;
-        }
+  @NonNull
+  static Priority convertDelugePriority(int priority, int version) {
+    if (version >= 10303) {
+      // Priority codes changes from Deluge 1.3.3 onwards
+      switch (priority) {
+        case 0:
+          return Priority.Off;
+        case 1:
+          return Priority.Low;
+        case 7:
+          return Priority.High;
+        default:
+          return Priority.Normal;
       }
-    }
-
-    static int convertPriority(Priority priority, int version) {
-      if (version >= 10303) {
-        // Priority codes changes from Deluge 1.3.3 onwards
-        switch (priority) {
-          case Off:
-            return 0;
-          case Low:
-            return 1;
-          case High:
-            return 7;
-          default:
-            return 5;
-        }
-      } else {
-        switch (priority) {
-          case Off:
-            return 0;
-          case Normal:
-            return 2;
-          case High:
-            return 5;
-          default:
-            return 1;
-        }
+    } else {
+      switch (priority) {
+        case 0:
+          return Priority.Off;
+        case 2:
+          return Priority.Normal;
+        case 5:
+          return Priority.High;
+        default:
+          return Priority.Low;
       }
     }
+  }
 
-    static int getVersionString(String versionString) {
-      int version = 0;
-      final String[] parts = versionString.split("\\.");
+  static int convertPriority(Priority priority, int version) {
+    if (version >= 10303) {
+      // Priority codes changes from Deluge 1.3.3 onwards
+      switch (priority) {
+        case Off:
+          return 0;
+        case Low:
+          return 1;
+        case High:
+          return 7;
+        default:
+          return 5;
+      }
+    } else {
+      switch (priority) {
+        case Off:
+          return 0;
+        case Normal:
+          return 2;
+        case High:
+          return 5;
+        default:
+          return 1;
+      }
+    }
+  }
 
-      if (parts.length > 0) {
-        version = Integer.parseInt(parts[0]) * 100 * 100;
-        if (parts.length > 1) {
-          version += Integer.parseInt(parts[1]) * 100;
-          if (parts.length > 2) {
-            // For the last part only read until a non-numeric character is read
-            // For example version 3.0.0-alpha5 is read as version code 30000
-            String numbers = "";
-            for (char c : parts[2].toCharArray()) {
-              if (Character.isDigit(c))
-              // Still a number; add it to the numbers string
-              {
-                numbers += Character.toString(c);
-              } else {
-                // No longer reading numbers; stop reading
-                break;
-              }
+  static int getVersionString(String versionString) {
+    int version = 0;
+    final String[] parts = versionString.split("\\.");
+
+    if (parts.length > 0) {
+      version = Integer.parseInt(parts[0]) * 100 * 100;
+      if (parts.length > 1) {
+        version += Integer.parseInt(parts[1]) * 100;
+        if (parts.length > 2) {
+          // For the last part only read until a non-numeric character is read
+          // For example version 3.0.0-alpha5 is read as version code 30000
+          String numbers = "";
+          for (char c : parts[2].toCharArray()) {
+            if (Character.isDigit(c))
+            // Still a number; add it to the numbers string
+            {
+              numbers += Character.toString(c);
+            } else {
+              // No longer reading numbers; stop reading
+              break;
             }
-            version += Integer.parseInt(numbers);
           }
+          version += Integer.parseInt(numbers);
         }
       }
-      return version;
     }
+    return version;
+  }
 }
