@@ -36,6 +36,7 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_ADD_MAGNET;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_FORCERECHECK;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_GET_LABELS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_GET_METHOD_LIST;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_GET_RSS_CONFIG;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_GET_TORRENTS_STATUS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_INFO;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_MOVESTORAGE;
@@ -56,6 +57,7 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_PARTDONE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_PATH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RATEDOWNLOAD;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RATEUPLOAD;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RSSFEEDS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SAVEPATH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SIZE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_STATUS;
@@ -203,6 +205,42 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
   @Override
   public DaemonSettings getSettings() {
     return settings;
+  }
+
+  @Override
+  public ArrayList<RemoteRssChannel> getRemoteRssChannels(Log log) throws DaemonException {
+    final DelugeRpcClient client = new DelugeRpcClient();
+    try {
+      client.connect(settings.getAddress(), settings.getPort(), settings.getUsername(), settings.getPassword());
+      //noinspection unchecked
+      final Map<String, Object> rssConfig = (Map<String, Object>) client.sendRequest(RPC_METHOD_GET_RSS_CONFIG);
+
+      //noinspection unchecked
+      final Map<String, Map<String, Object>> rssFeeds = (Map<String, Map<String, Object>>) rssConfig.get(RPC_RSSFEEDS);
+
+      final SimpleDateFormat formatter = new SimpleDateFormat("YYYY-MM-dd'T'HH:mm:ss", Locale.getDefault());
+
+      final ArrayList<RemoteRssChannel> channels = new ArrayList<>();
+
+      for (Map<String, Object> feed : rssFeeds.values()) {
+        long lastUpdate;
+        try {
+          lastUpdate = formatter.parse((String) feed.get("last_update")).getTime();
+        } catch (ParseException e) {
+          log.e(this, "Error parsing last update time of rss feed");
+          lastUpdate = 0;
+        }
+        channels.add(new DelugeRemoteRssChannel(
+            Integer.valueOf(feed.get("key").toString()),
+            (String) feed.get("name"),
+            (String) feed.get("url"),
+            lastUpdate));
+      }
+
+      return channels;
+    } finally {
+      client.close();
+    }
   }
 
   @NonNull
@@ -562,35 +600,5 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
     int get() {
       return value;
     }
-  }
-
-  @Override
-  public ArrayList<RemoteRssChannel> getRemoteRssChannels(Log log) throws DaemonException {
-    //noinspection unchecked
-    final Map<String, Object> rssConfig = (Map<String, Object>) client.sendRequest(RPC_METHOD_GET_RSS_CONFIG);
-
-    //noinspection unchecked
-    final Map<String, Map<String, Object>> rssFeeds = (Map<String, Map<String, Object>>) rssConfig.get(RPC_RSSFEEDS);
-
-    final SimpleDateFormat formatter = new SimpleDateFormat("YYYY-MM-dd'T'HH:mm:ss", Locale.getDefault());
-
-    final ArrayList<RemoteRssChannel> channels = new ArrayList<>();
-
-    for (Map<String, Object> feed : rssFeeds.values()) {
-      long lastUpdate;
-      try {
-        lastUpdate = formatter.parse((String) feed.get("last_update")).getTime();
-      } catch (ParseException e) {
-        log.e(this, "Error parsing last update time of rss feed");
-        lastUpdate = 0;
-      }
-      channels.add(new DelugeRemoteRssChannel(
-          Integer.valueOf(feed.get("key").toString()),
-          (String) feed.get("name"),
-          (String) feed.get("url"),
-          lastUpdate));
-    }
-
-    return channels;
   }
 }

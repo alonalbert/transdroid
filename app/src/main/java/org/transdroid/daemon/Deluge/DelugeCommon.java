@@ -64,6 +64,7 @@ class DelugeCommon {
     static final String RPC_METHOD_SETTRACKERS = "core.set_torrent_trackers";
     static final String RPC_METHOD_SET_TORRENT_OPTIONS = "core.set_torrent_options";
     static final String RPC_METHOD_STATUS = "core.get_torrent_status";
+    static final String RPC_METHOD_GET_RSS_CONFIG = "yarss2.get_config";
     static final String RPC_NAME = "name";
     static final String RPC_NUMPEERS = "num_peers";
     static final String RPC_NUMSEEDS = "num_seeds";
@@ -73,6 +74,7 @@ class DelugeCommon {
     static final String RPC_RATEDOWNLOAD = "download_payload_rate";
     static final String RPC_RATEUPLOAD = "upload_payload_rate";
     static final String RPC_RESULT = "result";
+    static final String RPC_RSSFEEDS = "rssfeeds";
     static final String RPC_SAVEPATH = "save_path";
     static final String RPC_SESSION_ID = "_session_id";
     static final String RPC_SIZE = "size";
