@@ -17,6 +17,68 @@
  */
 package org.transdroid.daemon.Deluge;
 
+import android.support.annotation.NonNull;
+
+import org.base64.android.Base64;
+import org.transdroid.core.gui.log.Log;
+import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
+import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
+import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
+import org.transdroid.core.rssparser.Channel;
+import org.transdroid.core.rssparser.Item;
+import org.transdroid.core.rssparser.RssParser;
+import org.transdroid.daemon.Daemon;
+import org.transdroid.daemon.DaemonException;
+import org.transdroid.daemon.DaemonException.ExceptionType;
+import org.transdroid.daemon.DaemonSettings;
+import org.transdroid.daemon.IDaemonAdapter;
+import org.transdroid.daemon.Label;
+import org.transdroid.daemon.Priority;
+import org.transdroid.daemon.Torrent;
+import org.transdroid.daemon.TorrentDetails;
+import org.transdroid.daemon.TorrentFile;
+import org.transdroid.daemon.task.AddByFileTask;
+import org.transdroid.daemon.task.AddByMagnetUrlTask;
+import org.transdroid.daemon.task.AddByUrlTask;
+import org.transdroid.daemon.task.DaemonTask;
+import org.transdroid.daemon.task.DaemonTaskFailureResult;
+import org.transdroid.daemon.task.DaemonTaskResult;
+import org.transdroid.daemon.task.DaemonTaskSuccessResult;
+import org.transdroid.daemon.task.ForceRecheckTask;
+import org.transdroid.daemon.task.GetFileListTask;
+import org.transdroid.daemon.task.GetFileListTaskSuccessResult;
+import org.transdroid.daemon.task.GetTorrentDetailsTask;
+import org.transdroid.daemon.task.GetTorrentDetailsTaskSuccessResult;
+import org.transdroid.daemon.task.RemoveTask;
+import org.transdroid.daemon.task.RetrieveTask;
+import org.transdroid.daemon.task.RetrieveTaskSuccessResult;
+import org.transdroid.daemon.task.SetDownloadLocationTask;
+import org.transdroid.daemon.task.SetFilePriorityTask;
+import org.transdroid.daemon.task.SetLabelTask;
+import org.transdroid.daemon.task.SetTrackersTask;
+import org.transdroid.daemon.task.SetTransferRatesTask;
+import org.xml.sax.SAXException;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DETAILS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DETAILS_FIELDS_ARRAY;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DOWNLOADEDEVER;
@@ -68,74 +130,15 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SAVEPATH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SIZE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_STATUS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SUBSCRIPTIONS;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TIER;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TIMEADDED;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALPEERS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALSEEDS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALSIZE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKERS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKER_STATUS;
-import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TIER;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_UPLOADEDEVER;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_URL;
-
-import android.support.annotation.NonNull;
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import javax.xml.parsers.ParserConfigurationException;
-import org.base64.android.Base64;
-import org.transdroid.core.gui.log.Log;
-import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
-import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
-import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
-import org.transdroid.core.rssparser.Channel;
-import org.transdroid.core.rssparser.Item;
-import org.transdroid.core.rssparser.RssParser;
-import org.transdroid.daemon.Daemon;
-import org.transdroid.daemon.DaemonException;
-import org.transdroid.daemon.DaemonException.ExceptionType;
-import org.transdroid.daemon.DaemonSettings;
-import org.transdroid.daemon.IDaemonAdapter;
-import org.transdroid.daemon.Label;
-import org.transdroid.daemon.Priority;
-import org.transdroid.daemon.Torrent;
-import org.transdroid.daemon.TorrentDetails;
-import org.transdroid.daemon.TorrentFile;
-import org.transdroid.daemon.task.AddByFileTask;
-import org.transdroid.daemon.task.AddByMagnetUrlTask;
-import org.transdroid.daemon.task.AddByUrlTask;
-import org.transdroid.daemon.task.DaemonTask;
-import org.transdroid.daemon.task.DaemonTaskFailureResult;
-import org.transdroid.daemon.task.DaemonTaskResult;
-import org.transdroid.daemon.task.DaemonTaskSuccessResult;
-import org.transdroid.daemon.task.ForceRecheckTask;
-import org.transdroid.daemon.task.GetFileListTask;
-import org.transdroid.daemon.task.GetFileListTaskSuccessResult;
-import org.transdroid.daemon.task.GetTorrentDetailsTask;
-import org.transdroid.daemon.task.GetTorrentDetailsTaskSuccessResult;
-import org.transdroid.daemon.task.RemoveTask;
-import org.transdroid.daemon.task.RetrieveTask;
-import org.transdroid.daemon.task.RetrieveTaskSuccessResult;
-import org.transdroid.daemon.task.SetDownloadLocationTask;
-import org.transdroid.daemon.task.SetFilePriorityTask;
-import org.transdroid.daemon.task.SetLabelTask;
-import org.transdroid.daemon.task.SetTrackersTask;
-import org.transdroid.daemon.task.SetTransferRatesTask;
-import org.xml.sax.SAXException;
 
 /**
  * The daemon adapter from the Deluge torrent client using deluged API directly.
@@ -218,6 +221,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
 
   @Override
   public ArrayList<RemoteRssChannel> getRemoteRssChannels(Log log) throws DaemonException {
+    final long now = System.currentTimeMillis();
     final DelugeRpcClient client = new DelugeRpcClient();
     try {
       client.connect(settings.getAddress(), settings.getPort(), settings.getUsername(), settings.getPassword());
@@ -244,7 +248,6 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
       //noinspection unchecked
       final Map<String, Map<String, Object>> subscriptions = (Map<String, Map<String, Object>>) rssConfig.get(RPC_SUBSCRIPTIONS);
       final ArrayList<RemoteRssChannel> channels = new ArrayList<>();
-      final long now = System.currentTimeMillis();
       for (Map<String, Object> subscription : subscriptions.values()) {
         final Integer key = Integer.valueOf(subscription.get(RPC_KEY).toString());
         final String name = (String) subscription.get(RPC_NAME);
@@ -264,6 +267,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
       return channels;
     } finally {
       client.close();
+      android.util.Log.i("Alon", String.format("getRemoteRssChannels: %dms", System.currentTimeMillis() - now));
     }
   }
 

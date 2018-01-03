@@ -25,21 +25,16 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+
 import com.nispok.snackbar.Snackbar;
 import com.nispok.snackbar.SnackbarManager;
 import com.nispok.snackbar.enums.SnackbarType;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.FragmentById;
-import org.androidannotations.annotations.InstanceState;
 import org.androidannotations.annotations.ItemClick;
 import org.androidannotations.annotations.OptionsItem;
 import org.androidannotations.annotations.UiThread;
@@ -58,6 +53,13 @@ import org.transdroid.core.service.ConnectivityHelper;
 import org.transdroid.daemon.DaemonException;
 import org.transdroid.daemon.IDaemonAdapter;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+
 /**
  * An activity that displays a list of {@link RemoteRssItem}s via an instance of {@link RemoteRssFragment}.
  * The activity manages the drawer to filter items by the feed they came through.
@@ -68,11 +70,8 @@ import org.transdroid.daemon.IDaemonAdapter;
  */
 @EActivity(R.layout.activity_remoterss)
 public class RemoteRssActivity extends AppCompatActivity {
-//	@Extra
-	@InstanceState
 	protected ArrayList<RemoteRssChannel> feeds;
 
-	@InstanceState
 	protected ArrayList<RemoteRssItem> recentItems;
 
 	// Server connection
