@@ -18,16 +18,17 @@ package org.transdroid.core.gui.remoterss;
 
 
 import android.app.Fragment;
+import android.os.Parcelable;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.ActionMenuView;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
+
 import com.nispok.snackbar.Snackbar;
 import com.nispok.snackbar.SnackbarManager;
 import com.nispok.snackbar.enums.SnackbarType;
-import java.util.ArrayList;
-import java.util.List;
+
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
@@ -44,6 +45,9 @@ import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
 import org.transdroid.daemon.DaemonException;
 import org.transdroid.daemon.task.DaemonTaskSuccessResult;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Fragment that shows a list of RSS items from the server and allows the user
  * to download remotely, without having to set up RSS feeds on the Android device.
@@ -55,7 +59,6 @@ public class RemoteRssFragment extends Fragment {
 	protected Log log;
 
 	// Local data
-	@InstanceState
 	protected ArrayList<RemoteRssItem> remoteRssItems;
 
 	// Views
@@ -71,6 +74,9 @@ public class RemoteRssFragment extends Fragment {
 	protected TextView remoterssNoFilesMessage;
 
 	protected RemoteRssItemsAdapter adapter;
+
+	@InstanceState
+	protected Parcelable torrentListState = null;
 
 	@AfterViews
 	protected void init() {
@@ -99,13 +105,25 @@ public class RemoteRssFragment extends Fragment {
 		}
 	}
 
+	@Override
+	public void onPause() {
+		super.onPause();
+		torrentListState = torrentsList.onSaveInstanceState();
+	}
+
 	/**
 	 * Updates the UI with a new list of RSS items.
 	 */
 	public void updateRemoteItems(List<RemoteRssItem> remoteItems) {
 		remoteRssItems = new ArrayList<>(remoteItems);
 		adapter.updateItems(remoteRssItems);
-		torrentsList.smoothScrollToPosition(0);
+		if (torrentListState != null) {
+			torrentsList.onRestoreInstanceState(torrentListState);
+			torrentListState = null;
+		}
+		else {
+			torrentsList.smoothScrollToPosition(0);
+		}
 
 		// Show/hide a nice message if there are no items to show
 		remoterssNoFilesMessage.setVisibility(remoteRssItems.size() > 0 ? View.GONE : View.VISIBLE);

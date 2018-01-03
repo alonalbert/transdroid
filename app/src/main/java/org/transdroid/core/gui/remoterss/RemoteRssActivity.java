@@ -35,7 +35,9 @@ import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.FragmentById;
+import org.androidannotations.annotations.InstanceState;
 import org.androidannotations.annotations.ItemClick;
+import org.androidannotations.annotations.NonConfigurationInstance;
 import org.androidannotations.annotations.OptionsItem;
 import org.androidannotations.annotations.UiThread;
 import org.androidannotations.annotations.ViewById;
@@ -70,7 +72,11 @@ import java.util.List;
  */
 @EActivity(R.layout.activity_remoterss)
 public class RemoteRssActivity extends AppCompatActivity {
+	@NonConfigurationInstance
 	protected ArrayList<RemoteRssChannel> feeds;
+
+	@InstanceState
+	protected int selectedFilter;
 
 	protected ArrayList<RemoteRssItem> recentItems;
 
@@ -118,18 +124,19 @@ public class RemoteRssActivity extends AppCompatActivity {
 		// Connect to the last used server
 		ServerSetting lastUsed = applicationSettings.getLastUsedServer();
 		currentConnection = lastUsed.createServerAdapter(connectivityHelper.getConnectedNetworkName(), this);
-		try {
-			feeds = ((RemoteRssSupplier) (currentConnection)).getRemoteRssChannels(log);
-		} catch (DaemonException e) {
-			onCommunicationError(e);
-			return;
+		if (feeds == null) {
+			try {
+				feeds = ((RemoteRssSupplier) (currentConnection)).getRemoteRssChannels(log);
+			} catch (DaemonException e) {
+				onCommunicationError(e);
+				return;
+			}
 		}
 
 		// Fill in the filter list
 		showChannelFilters();
 
-		// Show all items
-		showRecentItems();
+		onFeedSelected(selectedFilter);
 	}
 
 	@UiThread
@@ -186,7 +193,7 @@ public class RemoteRssActivity extends AppCompatActivity {
 		}
 
 		fragmentRemoteRss.updateRemoteItems(recentItems);
-		RemoteRssChannel channel = (RemoteRssChannel) drawerList.getAdapter().getItem(0);
+		RemoteRssChannel channel = (RemoteRssChannel) drawerList.getAdapter().getItem(selectedFilter);
 		getSupportActionBar().setSubtitle(channel.getName());
 	}
 
@@ -209,7 +216,9 @@ public class RemoteRssActivity extends AppCompatActivity {
 	}
 
 	@ItemClick(R.id.drawer_list)
+	@UiThread
 	protected void onFeedSelected(int position) {
+		selectedFilter = position;
 		if (position == 0) {
 			showRecentItems();
 		}
