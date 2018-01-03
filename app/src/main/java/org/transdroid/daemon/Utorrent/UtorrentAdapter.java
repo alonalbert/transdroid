@@ -30,6 +30,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.transdroid.core.gui.log.Log;
 import org.transdroid.core.gui.remoterss.data.RemoteRssChannel;
+import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
 import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
 import org.transdroid.daemon.Daemon;
 import org.transdroid.daemon.DaemonException;
@@ -660,4 +661,9 @@ public class UtorrentAdapter implements IDaemonAdapter, RemoteRssSupplier {
 	public ArrayList<RemoteRssChannel> getRemoteRssChannels(Log log) {
 		return remoteRssChannels;
 	}
+
+  @Override
+  public void downloadItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException {
+
+  }
 }

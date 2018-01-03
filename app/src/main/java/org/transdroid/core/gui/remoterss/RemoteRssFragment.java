@@ -23,11 +23,11 @@ import android.support.v7.widget.ActionMenuView;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
-
 import com.nispok.snackbar.Snackbar;
 import com.nispok.snackbar.SnackbarManager;
 import com.nispok.snackbar.enums.SnackbarType;
-
+import java.util.ArrayList;
+import java.util.List;
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
@@ -40,16 +40,9 @@ import org.transdroid.R;
 import org.transdroid.core.gui.lists.LocalTorrent;
 import org.transdroid.core.gui.log.Log;
 import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
-import org.transdroid.daemon.Daemon;
-import org.transdroid.daemon.IDaemonAdapter;
-import org.transdroid.daemon.task.AddByMagnetUrlTask;
-import org.transdroid.daemon.task.AddByUrlTask;
-import org.transdroid.daemon.task.DaemonTaskFailureResult;
-import org.transdroid.daemon.task.DaemonTaskResult;
+import org.transdroid.core.gui.remoterss.data.RemoteRssSupplier;
+import org.transdroid.daemon.DaemonException;
 import org.transdroid.daemon.task.DaemonTaskSuccessResult;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Fragment that shows a list of RSS items from the server and allows the user
@@ -132,30 +125,14 @@ public class RemoteRssFragment extends Fragment {
      */
 	@Background
 	protected void downloadRemoteRssItem(RemoteRssItem item) {
-		RemoteRssActivity activity = (RemoteRssActivity) getActivity();
-		IDaemonAdapter currentConnection = activity.getCurrentConnection();
-		DaemonTaskResult result;
+		final RemoteRssActivity activity = (RemoteRssActivity) getActivity();
+		final RemoteRssSupplier supplier = (RemoteRssSupplier) activity.getCurrentConnection();
 
-		if (item.isMagnetLink()) {
-			// Check if it's supported
-			if (!Daemon.supportsAddByMagnetUrl(currentConnection.getType())) {
-				onTaskFailed(getString(R.string.error_magnet_links_unsupported));
-				return;
-			}
-
-			AddByMagnetUrlTask addByMagnetUrlTask = AddByMagnetUrlTask.create(currentConnection, item.getLink());
-			result = addByMagnetUrlTask.execute(log);
-		}
-		else {
-			result = AddByUrlTask.create(currentConnection, item.getLink(), item.getTitle()).execute(log);
-		}
-
-		if (result instanceof DaemonTaskSuccessResult) {
-			onTaskSucceeded((DaemonTaskSuccessResult) result, getString(R.string.result_added, item.getTitle()));
-		} else if (result instanceof DaemonTaskFailureResult){
-			DaemonTaskFailureResult failure = ((DaemonTaskFailureResult) result);
-			String message = getString(LocalTorrent.getResourceForDaemonException(failure.getException()));
-			onTaskFailed(message);
+		try {
+			supplier.downloadItem(log, item, activity.getChannel(item.getSourceName()));
+			onTaskSucceeded(null, getString(R.string.result_added, item.getTitle()));
+		} catch (DaemonException e) {
+			onTaskFailed(getString(LocalTorrent.getResourceForDaemonException(e)));
 		}
 	}
 

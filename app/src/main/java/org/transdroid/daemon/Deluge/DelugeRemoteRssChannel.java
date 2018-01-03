@@ -14,7 +14,19 @@ import org.transdroid.core.gui.remoterss.data.RemoteRssItem;
  */
 class DelugeRemoteRssChannel extends RemoteRssChannel {
 
-  DelugeRemoteRssChannel(int id, String name, String link, long lastUpdated, List<RemoteRssItem> items) {
+  private final String label;
+  private final String downloadLocation;
+  private final String moveCompleted;
+
+  DelugeRemoteRssChannel(
+      int id,
+      String name,
+      String link,
+      long lastUpdated,
+      String label, String downloadLocation, String moveCompleted, List<RemoteRssItem> items) {
+    this.label = label;
+    this.downloadLocation = downloadLocation;
+    this.moveCompleted = moveCompleted;
     this.id = id;
     this.name = name;
     this.link = link;
@@ -27,9 +39,13 @@ class DelugeRemoteRssChannel extends RemoteRssChannel {
     name = in.readString();
     link = in.readString();
     lastUpdated = in.readLong();
+    label = in.readString();
+    downloadLocation = in.readString();
+    moveCompleted = in.readString();
 
     items = new ArrayList<>();
     in.readList(items, DelugeRemoteRssItem.class.getClassLoader());
+
   }
 
   @Override
@@ -38,7 +54,22 @@ class DelugeRemoteRssChannel extends RemoteRssChannel {
     dest.writeString(name);
     dest.writeString(link);
     dest.writeLong(lastUpdated);
+    dest.writeString(label);
+    dest.writeString(downloadLocation);
+    dest.writeString(moveCompleted);
     dest.writeList(items);
+  }
+
+  public String getLabel() {
+    return label;
+  }
+
+  public String getDownloadLocation() {
+    return downloadLocation;
+  }
+
+  public String getMoveCompleted() {
+    return moveCompleted;
   }
 
   public static final Parcelable.Creator<DelugeRemoteRssChannel> CREATOR = new Parcelable.Creator<DelugeRemoteRssChannel>() {
@@ -49,5 +80,4 @@ class DelugeRemoteRssChannel extends RemoteRssChannel {
       return new DelugeRemoteRssChannel[size];
     }
   };
-
 }

@@ -20,6 +20,7 @@ package org.transdroid.daemon.Deluge;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DETAILS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DETAILS_FIELDS_ARRAY;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DOWNLOADEDEVER;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_DOWNLOAD_LOCATION;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_ETA;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_FIELDS_ARRAY;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_FILEPRIORITIES;
@@ -27,6 +28,7 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_FILEPROGRESS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_FILE_FIELDS_ARRAY;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_HASH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_INDEX;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_KEY;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_LABEL;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_MAXDOWNLOAD;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_MAXUPLOAD;
@@ -51,6 +53,8 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_SETLABEL;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_SETTRACKERS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_SET_TORRENT_OPTIONS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_METHOD_STATUS;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_MOVE_COMPLETED;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_MOVE_COMPLETED_PATH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_NAME;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_NUMPEERS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_NUMSEEDS;
@@ -59,6 +63,8 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_PATH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RATEDOWNLOAD;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RATEUPLOAD;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RSSFEEDS;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_RSSFEED_KEY;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SUBSCRIPTIONS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SAVEPATH;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_SIZE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_STATUS;
@@ -69,7 +75,7 @@ import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TOTALSIZE;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKERS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKER_STATUS;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKER_TIER;
-import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_TRACKER_URL;
+import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_URL;
 import static org.transdroid.daemon.Deluge.DelugeCommon.RPC_UPLOADEDEVER;
 
 import android.support.annotation.NonNull;
@@ -80,8 +86,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -89,7 +93,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -219,8 +222,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
     try {
       client.connect(settings.getAddress(), settings.getPort(), settings.getUsername(), settings.getPassword());
 
-      final List<String> methods = (List<String>) client.sendRequest(RPC_METHOD_GET_METHOD_LIST);
-      if (!methods.contains(RPC_METHOD_GET_RSS_CONFIG)) {
+      if (!hasMethod(client, RPC_METHOD_GET_RSS_CONFIG)) {
         throw new DaemonException(ExceptionType.MethodUnsupported, "YaRRS2 plugin not installed");
       }
       //noinspection unchecked
@@ -229,30 +231,72 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
       //noinspection unchecked
       final Map<String, Map<String, Object>> rssFeeds = (Map<String, Map<String, Object>>) rssConfig.get(RPC_RSSFEEDS);
 
-      final SimpleDateFormat formatter = new SimpleDateFormat("YYYY-MM-dd'T'HH:mm:ss", Locale.getDefault());
-
-      final ArrayList<RemoteRssChannel> channels = new ArrayList<>();
-
-      final long now = System.currentTimeMillis();
+      final Map<Object, String> feedUrlMap = new HashMap<>();
+      final Map<Object, List<Item>> feedItemMap = new HashMap<>();
       for (Map<String, Object> feed : rssFeeds.values()) {
-        long lastUpdate;
-        try {
-          lastUpdate = formatter.parse((String) feed.get("last_update")).getTime();
-        } catch (ParseException e) {
-          log.e(this, "Error parsing last update time of rss feed");
-          lastUpdate = 0;
-        }
-        final String feedUrl = (String) feed.get("url");
-        final String feedName = (String) feed.get("name");
-        final Integer key = Integer.valueOf(feed.get("key").toString());
+        final String feedUrl = (String) feed.get(RPC_URL);
+        final Object key = feed.get(RPC_KEY);
+        feedUrlMap.put(key, feedUrl);
+        final List<Item> items = getRssFeedItems(feedUrl, log);
+        feedItemMap.put(key, items);
+      }
+
+      //noinspection unchecked
+      final Map<String, Map<String, Object>> subscriptions = (Map<String, Map<String, Object>>) rssConfig.get(RPC_SUBSCRIPTIONS);
+      final ArrayList<RemoteRssChannel> channels = new ArrayList<>();
+      final long now = System.currentTimeMillis();
+      for (Map<String, Object> subscription : subscriptions.values()) {
+        final Integer key = Integer.valueOf(subscription.get(RPC_KEY).toString());
+        final String name = (String) subscription.get(RPC_NAME);
+        final String label = (String) subscription.get(RPC_LABEL);
+        final String downloadLocation = (String) subscription.get(RPC_DOWNLOAD_LOCATION);
+        final String moveCompleted = (String) subscription.get(RPC_MOVE_COMPLETED);
+        final Object feedKey = subscription.get(RPC_RSSFEED_KEY);
+        final String feedUrl = feedUrlMap.get(feedKey);
 
         final List<RemoteRssItem> items = new ArrayList<>();
-        for (Item item : getRssFeedItems(feedUrl, log)) {
-          items.add(new DelugeRemoteRssItem(item.getTitle(), item.getLink(), feedName, item.getPubdate()));
+        for (Item item : feedItemMap.get(feedKey)) {
+          items.add(new DelugeRemoteRssItem(item.getTitle(), item.getLink(), name, item.getPubdate()));
         }
-        channels.add(new DelugeRemoteRssChannel(key, feedName, feedUrl, now, items));
+
+        channels.add(new DelugeRemoteRssChannel(key, name, feedUrl, now, label, downloadLocation, moveCompleted, items));
       }
       return channels;
+    } finally {
+      client.close();
+    }
+  }
+
+  @Override
+  public void downloadItem(Log log, RemoteRssItem rssItem, RemoteRssChannel rssChannel) throws DaemonException {
+    final DelugeRemoteRssItem item = (DelugeRemoteRssItem) rssItem;
+    final DelugeRemoteRssChannel channel = (DelugeRemoteRssChannel) rssChannel;
+
+    final Map<String, Object> options = new HashMap<>();
+    final String label;
+    if (channel != null) {
+      final String downloadLocation = channel.getDownloadLocation();
+      if (downloadLocation != null) {
+        options.put(RPC_DOWNLOAD_LOCATION, downloadLocation);
+      }
+      final String moveCompleted = channel.getMoveCompleted();
+      if (moveCompleted != null) {
+        options.put(RPC_MOVE_COMPLETED, true);
+        options.put(RPC_MOVE_COMPLETED_PATH, true);
+      }
+      label = channel.getLabel();
+    } else {
+      label = null;
+    }
+    final DelugeRpcClient client = new DelugeRpcClient();
+
+    try {
+      client.connect(settings.getAddress(), settings.getPort(), settings.getUsername(), settings.getPassword());
+      final String torrentId = (String) client
+          .sendRequest(item.isMagnetLink() ? RPC_METHOD_ADD_MAGNET : RPC_METHOD_ADD, item.getLink(), options);
+      if (label != null && hasMethod(client, RPC_METHOD_SETLABEL)) {
+        client.sendRequest(RPC_METHOD_SETLABEL, torrentId, label);
+      }
     } finally {
       client.close();
     }
@@ -267,9 +311,8 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
     final List<Torrent> torrents = getTorrents(torrentsStatus.values());
 
     // Check if Label plugin is enabled
-    //noinspection unchecked
-    final List<String> methods = (List<String>) client.sendRequest(RPC_METHOD_GET_METHOD_LIST);
-    final boolean hasLabelPlugin = methods.contains(RPC_METHOD_GET_LABELS);
+
+    final boolean hasLabelPlugin = hasMethod(client, RPC_METHOD_GET_LABELS);
 
     // Get label list from server
     //noinspection unchecked
@@ -297,7 +340,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
         .get(RPC_TRACKERS);
     final List<String> trackers = new ArrayList<>();
     for (Map<String, Object> trackerResponse : trackerResponses) {
-      trackers.add((String) trackerResponse.get(RPC_TRACKER_URL));
+      trackers.add((String) trackerResponse.get(RPC_URL));
     }
 
     return new GetTorrentDetailsTaskSuccessResult(task, new TorrentDetails(
@@ -353,6 +396,9 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
 
   @NonNull
   private DaemonTaskResult doSetLabel(DelugeRpcClient client, SetLabelTask task) throws DaemonException {
+    if (!hasMethod(client, RPC_METHOD_SETLABEL)) {
+      throw new DaemonException(ExceptionType.MethodUnsupported, "Label method not installed");
+    }
     final String torrentId = task.getTargetTorrent().getUniqueID();
     final String label = task.getNewLabel() == null ? "" : task.getNewLabel();
     client.sendRequest(RPC_METHOD_SETLABEL, torrentId, label);
@@ -404,7 +450,7 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
     for (int i = 0, n = newTrackers.size(); i < n; i++) {
       final Map<String, Object> tracker = new HashMap<>();
       tracker.put(RPC_TRACKER_TIER, i);
-      tracker.put(RPC_TRACKER_URL, newTrackers.get(i));
+      tracker.put(RPC_URL, newTrackers.get(i));
       trackers.add(tracker);
     }
     client.sendRequest(RPC_METHOD_SETTRACKERS, task.getTargetTorrent().getUniqueID(), trackers);
@@ -612,6 +658,12 @@ public class DelugeRpcAdapter implements IDaemonAdapter, RemoteRssSupplier {
       log.e(DelugeRpcAdapter.this, "Failed to load RSS feed.");
     }
     return new ArrayList<>();
+  }
+
+  private boolean hasMethod(DelugeRpcClient client, String method) throws DaemonException {
+    //noinspection unchecked
+    final List<String> methods = (List<String>) client.sendRequest(RPC_METHOD_GET_METHOD_LIST);
+    return methods.contains(method);
   }
 
   /**

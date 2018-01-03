@@ -227,4 +227,13 @@ public class RemoteRssActivity extends AppCompatActivity {
 	public IDaemonAdapter getCurrentConnection() {
 		return currentConnection;
 	}
+
+	public RemoteRssChannel getChannel(String name) {
+		for (RemoteRssChannel feed : feeds) {
+			if (feed.getName().equals(name)) {
+				return feed;
+			}
+		}
+		return null;
+	}
 }
