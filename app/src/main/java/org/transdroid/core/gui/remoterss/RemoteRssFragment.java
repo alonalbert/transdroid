@@ -18,6 +18,7 @@ package org.transdroid.core.gui.remoterss;
 
 
 import android.app.Fragment;
+import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.ActionMenuView;
@@ -72,7 +73,7 @@ public class RemoteRssFragment extends Fragment {
 	@ViewById
 	protected ListView torrentsList;
 	@ViewById
-	protected TextView remoterssNoFilesMessage;
+	protected TextView remoterssStatusMessage;
 
 	protected RemoteRssItemsAdapter adapter;
 
@@ -111,15 +112,15 @@ public class RemoteRssFragment extends Fragment {
 				@Override
 				public void onRefresh() {
 					((RefreshableActivity) getActivity()).refreshScreen();
-					swipeRefreshLayout.setRefreshing(false);
 				}
 			});
 		}
 	}
 
 	@Override
-	public void onPause() {
-		super.onPause();
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		// torrentListState is annotated with @InstanceState so it will be saved.
 		torrentListState = torrentsList.onSaveInstanceState();
 	}
 
@@ -138,7 +139,20 @@ public class RemoteRssFragment extends Fragment {
 		}
 
 		// Show/hide a nice message if there are no items to show
-		remoterssNoFilesMessage.setVisibility(remoteRssItems.size() > 0 ? View.GONE : View.VISIBLE);
+
+		if (remoteRssItems.size() > 0) {
+			remoterssStatusMessage.setVisibility(View.GONE);
+		}
+		else {
+			remoterssStatusMessage.setVisibility(View.VISIBLE);
+			remoterssStatusMessage.setText(R.string.remoterss_no_files);
+		}
+		swipeRefreshLayout.setRefreshing(false);
+	}
+
+	@UiThread
+	public void setRefreshing(boolean refreshing) {
+		swipeRefreshLayout.setRefreshing(refreshing);
 	}
 
 	/**

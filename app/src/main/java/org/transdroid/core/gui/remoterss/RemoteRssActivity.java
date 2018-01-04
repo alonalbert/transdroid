@@ -127,7 +127,9 @@ public class RemoteRssActivity extends AppCompatActivity implements RefreshableA
 		currentConnection = lastUsed.createServerAdapter(connectivityHelper.getConnectedNetworkName(), this);
 		if (feeds == null) {
 			try {
+				fragmentRemoteRss.setRefreshing(true);
 				feeds = ((RemoteRssSupplier) (currentConnection)).getRemoteRssChannels(log);
+				fragmentRemoteRss.setRefreshing(false);
 			} catch (DaemonException e) {
 				onCommunicationError(e);
 				return;

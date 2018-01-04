@@ -23,9 +23,9 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="@string/remoterss_no_files"
+            android:text="@string/remoterss_loading"
             android:gravity="center"
-            android:id="@+id/remoterss_no_files_message"/>
+            android:id="@+id/remoterss_status_message"/>
 
         <android.support.v4.widget.SwipeRefreshLayout
             android:id="@+id/swipe_refresh_layout"
