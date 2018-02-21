@@ -26,9 +26,6 @@ import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.PreferenceManager;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-
 import org.androidannotations.annotations.Bean;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.OptionsItem;
@@ -37,6 +34,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.transdroid.R;
+import org.transdroid.core.gui.SnackbarHelper;
 import org.transdroid.core.gui.log.Log;
 import org.transdroid.core.gui.settings.KeyBoundPreferencesActivity;
 import org.transdroid.core.gui.settings.MainSettingsActivity_;
@@ -134,7 +132,7 @@ public class XirvikSharedSettingsActivity extends KeyBoundPreferencesActivity {
 		Editor edit = PreferenceManager.getDefaultSharedPreferences(XirvikSharedSettingsActivity.this).edit();
 		EditTextPreference pref = (EditTextPreference) findPreference("seedbox_xirvikshared_rpc_" + key);
 		if (result == null) {
-			SnackbarManager.show(Snackbar.with(this).text(R.string.pref_seedbox_xirviknofolder).colorResource(R.color.red));
+			SnackbarHelper.show(this, R.string.pref_seedbox_xirviknofolder, R.color.red);
 			edit.remove("seedbox_xirvikshared_rpc_" + key);
 			pref.setSummary("");
 		} else {

@@ -32,9 +32,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
@@ -49,6 +46,7 @@ import org.transdroid.core.app.search.SearchHelper.SearchSortOrder;
 import org.transdroid.core.app.search.SearchResult;
 import org.transdroid.core.app.search.SearchSite;
 import org.transdroid.core.app.settings.SystemSettings_;
+import org.transdroid.core.gui.SnackbarHelper;
 import org.transdroid.core.gui.TorrentsActivity_;
 import org.transdroid.core.gui.navigation.NavigationHelper_;
 import org.transdroid.core.gui.navigation.SelectionManagerMode;
@@ -138,7 +136,7 @@ public class SearchResultsFragment extends Fragment {
 	@ItemClick(R.id.searchresults_list)
 	protected void onItemClicked(SearchResult item) {
 		if (item.getTorrentUrl() == null) {
-			SnackbarManager.show(Snackbar.with(getActivity()).text(R.string.error_notorrentfile).colorResource(R.color.red));
+			SnackbarHelper.show(getActivity(), R.string.error_notorrentfile, R.color.red);
 			return;
 		}
 		// Don't broadcast this intent; we can safely assume this is intended for Transdroid only

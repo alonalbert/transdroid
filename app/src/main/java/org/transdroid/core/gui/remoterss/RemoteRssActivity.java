@@ -26,10 +26,6 @@ import android.support.v7.widget.Toolbar;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-import com.nispok.snackbar.enums.SnackbarType;
-
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
@@ -45,6 +41,7 @@ import org.transdroid.R;
 import org.transdroid.core.app.settings.ApplicationSettings;
 import org.transdroid.core.app.settings.ServerSetting;
 import org.transdroid.core.app.settings.SystemSettings_;
+import org.transdroid.core.gui.SnackbarHelper;
 import org.transdroid.core.gui.lists.LocalTorrent;
 import org.transdroid.core.gui.lists.SimpleListItemAdapter;
 import org.transdroid.core.gui.log.Log;
@@ -185,7 +182,7 @@ public class RemoteRssActivity extends AppCompatActivity implements RefreshableA
 		//noinspection ThrowableResultOfMethodCallIgnored
 		log.i(this, daemonException.toString());
 		String error = getString(LocalTorrent.getResourceForDaemonException(daemonException));
-		SnackbarManager.show(Snackbar.with(this).text(error).colorResource(R.color.red).type(SnackbarType.MULTI_LINE));
+		SnackbarHelper.show(this, error, R.color.red);
 	}
 
 

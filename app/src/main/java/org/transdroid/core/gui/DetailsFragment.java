@@ -35,10 +35,6 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-import com.nispok.snackbar.enums.SnackbarType;
-
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EFragment;
@@ -430,7 +426,7 @@ public class DetailsFragment extends Fragment implements OnTrackersUpdatedListen
 	@OptionsItem(R.id.action_updatetrackers)
 	protected void updateTrackers() {
 		if (torrentDetails == null) {
-			SnackbarManager.show(Snackbar.with(getActivity()).text(R.string.error_stillloadingdetails));
+			SnackbarHelper.show(getActivity(), R.string.error_stillloadingdetails);
 			return;
 		}
 		SetTrackersDialog.show(getActivity(), this, torrentDetails.getTrackersText());
@@ -597,8 +593,7 @@ public class DetailsFragment extends Fragment implements OnTrackersUpdatedListen
 				}
 
 				// No app is available that can handle FTP downloads
-				SnackbarManager.show(Snackbar.with(getActivity()).text(getString(R.string.error_noftpapp, url)).type(SnackbarType.MULTI_LINE)
-						.colorResource(R.color.red));
+				SnackbarHelper.show(getActivity(), getString(R.string.error_noftpapp, url), R.color.red);
 				mode.finish();
 				return true;
 

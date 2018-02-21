@@ -38,9 +38,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Bean;
 import org.androidannotations.annotations.EFragment;
@@ -49,6 +46,7 @@ import org.androidannotations.annotations.ItemClick;
 import org.androidannotations.annotations.ViewById;
 import org.transdroid.R;
 import org.transdroid.core.app.settings.RssfeedSetting;
+import org.transdroid.core.gui.SnackbarHelper;
 import org.transdroid.core.gui.TorrentsActivity_;
 import org.transdroid.core.gui.navigation.NavigationHelper;
 import org.transdroid.core.gui.navigation.SelectionManagerMode;
@@ -162,7 +160,7 @@ public class RssitemsFragment extends Fragment {
 						startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(first.getLink())));
 					} else {
 						// No URL was specified in the RSS feed item link tag (or no link tag was present)
-						SnackbarManager.show(Snackbar.with(getActivity()).text(R.string.error_no_link).colorResource(R.color.red));
+						SnackbarHelper.show(getActivity(), R.string.error_no_link, R.color.red);
 					}
 				} else if (itemId == R.id.action_useassearch) {
 					// Use the RSS item title to start a new search (mimicking the search manager style)

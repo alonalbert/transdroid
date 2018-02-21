@@ -24,10 +24,6 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-import com.nispok.snackbar.enums.SnackbarType;
-
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
@@ -36,6 +32,7 @@ import org.androidannotations.annotations.ItemClick;
 import org.androidannotations.annotations.UiThread;
 import org.androidannotations.annotations.ViewById;
 import org.transdroid.R;
+import org.transdroid.core.gui.SnackbarHelper;
 import org.transdroid.core.gui.lists.LocalTorrent;
 import org.transdroid.core.gui.log.Log;
 import org.transdroid.core.gui.navigation.RefreshableActivity;
@@ -158,15 +155,11 @@ public class RemoteRssFragment extends Fragment {
 
 	@UiThread
 	protected void onTaskSucceeded(DaemonTaskSuccessResult result, String successMessage) {
-		SnackbarManager.show(Snackbar.with(getActivity()).text(successMessage));
+		SnackbarHelper.show(getActivity(), successMessage);
 	}
 
 	@UiThread
 	protected void onTaskFailed(String message) {
-		SnackbarManager.show(Snackbar.with(getActivity())
-				.text(message)
-				.colorResource(R.color.red)
-				.type(SnackbarType.MULTI_LINE)
-		);
+		SnackbarHelper.show(getActivity(), message, R.color.red);
 	}
 }

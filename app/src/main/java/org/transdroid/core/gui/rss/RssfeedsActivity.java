@@ -25,9 +25,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
@@ -40,6 +37,7 @@ import org.transdroid.R;
 import org.transdroid.core.app.settings.ApplicationSettings;
 import org.transdroid.core.app.settings.RssfeedSetting;
 import org.transdroid.core.app.settings.SystemSettings_;
+import org.transdroid.core.gui.SnackbarHelper;
 import org.transdroid.core.gui.TorrentsActivity_;
 import org.transdroid.core.gui.log.Log;
 import org.transdroid.core.gui.navigation.NavigationHelper;
@@ -169,11 +167,11 @@ public class RssfeedsActivity extends AppCompatActivity {
 
 			// Error message or not yet loaded? Show a toast message instead of opening the items activity
 			if (loader.hasError()) {
-				SnackbarManager.show(Snackbar.with(this).text(R.string.rss_error).colorResource(R.color.red));
+				SnackbarHelper.show(this, R.string.rss_error, R.color.red);
 				return;
 			}
 			if (loader.getChannel() == null || loader.getChannel().getItems().size() == 0) {
-				SnackbarManager.show(Snackbar.with(this).text(R.string.rss_notloaded).colorResource(R.color.red));
+				SnackbarHelper.show(this, R.string.rss_notloaded, R.color.red);
 				return;
 			}
 

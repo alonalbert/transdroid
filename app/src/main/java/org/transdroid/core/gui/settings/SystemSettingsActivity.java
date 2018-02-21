@@ -32,9 +32,6 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-
 import org.androidannotations.annotations.Bean;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.OnActivityResult;
@@ -43,6 +40,7 @@ import org.json.JSONException;
 import org.transdroid.R;
 import org.transdroid.core.app.settings.ApplicationSettings;
 import org.transdroid.core.app.settings.SettingsPersistence;
+import org.transdroid.core.gui.SnackbarHelper;
 import org.transdroid.core.gui.log.ErrorLogSender;
 import org.transdroid.core.gui.navigation.NavigationHelper;
 import org.transdroid.core.gui.search.BarcodeHelper;
@@ -97,7 +95,7 @@ public class SystemSettingsActivity extends PreferenceCompatActivity {
 		@Override
 		public boolean onPreferenceClick(Preference preference) {
 			SearchHistoryProvider.clearHistory(getApplicationContext());
-			SnackbarManager.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.pref_clearsearch_success));
+			SnackbarHelper.show(SystemSettingsActivity.this, R.string.pref_clearsearch_success);
 			return true;
 		}
 	};
@@ -133,8 +131,7 @@ public class SystemSettingsActivity extends PreferenceCompatActivity {
 				String settings = settingsPersistence.exportSettingsAsString(prefs);
 				BarcodeHelper.shareContentBarcode(SystemSettingsActivity.this, settings);
 			} catch (JSONException e) {
-				SnackbarManager.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.error_cant_write_settings_file)
-						.colorResource(R.color.red));
+				SnackbarHelper.show(SystemSettingsActivity.this, R.string.error_cant_write_settings_file, R.color.red);
 			}
 		}
 	};
@@ -179,13 +176,11 @@ public class SystemSettingsActivity extends PreferenceCompatActivity {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SystemSettingsActivity.this);
 		try {
 			settingsPersistence.importSettingsFromFile(prefs, SettingsPersistence.DEFAULT_SETTINGS_FILE);
-			SnackbarManager.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.pref_import_success));
+			SnackbarHelper.show(SystemSettingsActivity.this, R.string.pref_import_success);
 		} catch (FileNotFoundException e) {
-			SnackbarManager
-					.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.error_file_not_found).colorResource(R.color.red));
+			SnackbarHelper.show(SystemSettingsActivity.this, R.string.error_file_not_found, R.color.red);
 		} catch (JSONException e) {
-			SnackbarManager.show(Snackbar.with(SystemSettingsActivity.this)
-					.text(getString(R.string.error_no_valid_settings_file, getString(R.string.app_name))).colorResource(R.color.red));
+			SnackbarHelper.show(SystemSettingsActivity.this, getString(R.string.error_no_valid_settings_file, getString(R.string.app_name)), R.color.red);
 		}
 	}
 
@@ -193,10 +188,9 @@ public class SystemSettingsActivity extends PreferenceCompatActivity {
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SystemSettingsActivity.this);
 		try {
 			settingsPersistence.exportSettingsToFile(prefs, SettingsPersistence.DEFAULT_SETTINGS_FILE);
-			SnackbarManager.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.pref_export_success));
+			SnackbarHelper.show(SystemSettingsActivity.this, R.string.pref_export_success);
 		} catch (JSONException | IOException e) {
-			SnackbarManager.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.error_cant_write_settings_file)
-					.colorResource(R.color.red));
+			SnackbarHelper.show(SystemSettingsActivity.this, R.string.error_cant_write_settings_file, R.color.red);
 		}
 	}
 
@@ -211,10 +205,9 @@ public class SystemSettingsActivity extends PreferenceCompatActivity {
 		if (formatName != null && formatName.equals("QR_CODE") && !TextUtils.isEmpty(contents)) {
 			try {
 				settingsPersistence.importSettingsAsString(prefs, contents);
-				SnackbarManager.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.pref_import_success));
+				SnackbarHelper.show(SystemSettingsActivity.this, R.string.pref_import_success);
 			} catch (JSONException e) {
-				SnackbarManager
-						.show(Snackbar.with(SystemSettingsActivity.this).text(R.string.error_file_not_found).colorResource(R.color.red));
+				SnackbarHelper.show(SystemSettingsActivity.this, R.string.error_file_not_found, R.color.red);
 			}
 		}
 	}

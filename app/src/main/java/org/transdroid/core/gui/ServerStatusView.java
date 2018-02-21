@@ -21,9 +21,6 @@ import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-
 import org.androidannotations.annotations.EViewGroup;
 import org.androidannotations.annotations.ViewById;
 import org.transdroid.R;
@@ -117,7 +114,7 @@ public class ServerStatusView extends RelativeLayout implements OnRatesPickedLis
 
 	@Override
 	public void onInvalidNumber() {
-		SnackbarManager.show(Snackbar.with(activity).text(R.string.error_notanumber).colorResource(R.color.red));
+		SnackbarHelper.show(activity, R.string.error_notanumber, R.color.red);
 	}
 
 }

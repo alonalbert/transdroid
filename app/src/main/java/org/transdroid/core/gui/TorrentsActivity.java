@@ -25,6 +25,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -44,9 +45,6 @@ import android.widget.ListView;
 
 import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-import com.nispok.snackbar.enums.SnackbarType;
 
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
@@ -668,7 +666,7 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 			return;
 		}
 		if (dataUri.getScheme() == null) {
-			SnackbarManager.show(Snackbar.with(this).text(R.string.error_invalid_url_form).colorResource(R.color.red));
+			SnackbarHelper.show(this, R.string.error_invalid_url_form, R.color.red);
 			return;
 		}
 
@@ -811,7 +809,7 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 	protected void onBarcodeScanHandled(String barcode, String result) {
 		log.d(this, "Scanned barcode " + barcode + " and got " + result);
 		if (TextUtils.isEmpty(result)) {
-			SnackbarManager.show(Snackbar.with(this).text(R.string.error_noproductforcode).colorResource(R.color.red).type(SnackbarType.MULTI_LINE));
+			SnackbarHelper.show(this, R.string.error_noproductforcode, R.color.red);
 		} else if (result.startsWith("http") || result.startsWith("https")) {
 			addTorrentByUrl(result, "QR code result"); // No torrent title known
 		} else if (result.startsWith("magnet")) {
@@ -1095,10 +1093,10 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 		} catch (SecurityException e) {
 			// No longer access to this file
 			log.e(this, "No access given to " + contentUri.toString() + ": " + e.toString());
-			SnackbarManager.show(Snackbar.with(this).text(R.string.error_torrentfile).colorResource(R.color.red));
+			SnackbarHelper.show(this, R.string.error_torrentfile, R.color.red);
 		} catch (FileNotFoundException e) {
 			log.e(this, contentUri.toString() + " does not exist: " + e.toString());
-			SnackbarManager.show(Snackbar.with(this).text(R.string.error_torrentfile).colorResource(R.color.red));
+			SnackbarHelper.show(this, R.string.error_torrentfile, R.color.red);
 		}
 	}
 
@@ -1110,7 +1108,7 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 			addTorrentFromStream(input, title);
 		} catch (Exception e) {
 			log.e(this, "Can't download private site torrent " + url + " from " + source + ": " + e.toString());
-			SnackbarManager.show(Snackbar.with(this).text(R.string.error_torrentfile).colorResource(R.color.red));
+			SnackbarHelper.show(this, R.string.error_torrentfile, R.color.red);
 		}
 
 	}
@@ -1138,14 +1136,14 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 					response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
 				log.e(this, "Can't retrieve web torrent " + url + ": Unexpected HTTP response status code " +
 						response.getStatusLine().toString());
-				SnackbarManager.show(Snackbar.with(this).text(R.string.error_401).colorResource(R.color.red));
+				SnackbarHelper.show(this, R.string.error_401, R.color.red);
 				return;
 			}
 			InputStream input = response.getEntity().getContent();
 			addTorrentFromStream(input, title);
 		} catch (Exception e) {
 			log.e(this, "Can't retrieve web torrent " + url + ": " + e.toString());
-			SnackbarManager.show(Snackbar.with(this).text(R.string.error_torrentfile).colorResource(R.color.red));
+			SnackbarHelper.show(this, R.string.error_torrentfile, R.color.red);
 		}
 	}
 
@@ -1171,7 +1169,7 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 			}
 		} catch (IOException e) {
 			log.e(this, "Can't write input stream to " + tempFile.toString() + ": " + e.toString());
-			SnackbarManager.show(Snackbar.with(this).text(R.string.error_torrentfile).colorResource(R.color.red));
+			SnackbarHelper.show(this, R.string.error_torrentfile, R.color.red);
 		} finally {
 			try {
 				if (input != null) {
@@ -1179,7 +1177,7 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 				}
 			} catch (IOException e) {
 				log.e(this, "Error closing the input stream " + tempFile.toString() + ": " + e.toString());
-				SnackbarManager.show(Snackbar.with(this).text(R.string.error_torrentfile).colorResource(R.color.red));
+				SnackbarHelper.show(this, R.string.error_torrentfile, R.color.red);
 			}
 		}
 	}
@@ -1316,7 +1314,7 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 	protected void onTaskSucceeded(DaemonTaskSuccessResult result, String successMessage) {
 		// Refresh the screen as well
 		refreshScreen();
-		SnackbarManager.show(Snackbar.with(this).text(successMessage));
+		SnackbarHelper.show(this, successMessage);
 	}
 
 	@UiThread
@@ -1324,7 +1322,7 @@ public class TorrentsActivity extends AppCompatActivity implements TorrentTasksE
 		//noinspection ThrowableResultOfMethodCallIgnored
 		log.i(this, result.getException().toString());
 		String error = getString(LocalTorrent.getResourceForDaemonException(result.getException()));
-		SnackbarManager.show(Snackbar.with(this).text(error).colorResource(R.color.red).type(SnackbarType.MULTI_LINE));
+		SnackbarHelper.show(this, error, R.color.red);
 		fragmentTorrents.updateIsLoading(false);
 		if (isCritical) {
 			fragmentTorrents.updateError(error);

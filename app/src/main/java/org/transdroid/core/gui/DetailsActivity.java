@@ -23,9 +23,6 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
-import com.nispok.snackbar.Snackbar;
-import com.nispok.snackbar.SnackbarManager;
-
 import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Bean;
@@ -259,7 +256,7 @@ public class DetailsActivity extends AppCompatActivity implements TorrentTasksEx
 		setResult(RESULT_OK, new Intent().putExtra("torrent_removed", true).putExtra("affected_torrent", torrent));
 		finish();
 		if (closeText != null) {
-			SnackbarManager.show(Snackbar.with(this).text(closeText));
+			SnackbarHelper.show(this, closeText);
 		}
 	}
 
@@ -327,7 +324,7 @@ public class DetailsActivity extends AppCompatActivity implements TorrentTasksEx
 		// Refresh the screen as well
 		refreshTorrent();
 		refreshTorrentDetails(torrent);
-		SnackbarManager.show(Snackbar.with(this).text(successMessage));
+		SnackbarHelper.show(this, successMessage);
 	}
 
 	@UiThread
@@ -347,8 +344,7 @@ public class DetailsActivity extends AppCompatActivity implements TorrentTasksEx
 		log.i(this, result.getException().toString());
 		String error = getString(LocalTorrent.getResourceForDaemonException(result.getException()));
 		fragmentDetails.updateIsLoading(false, isCritical ? error : null);
-		SnackbarManager.show(Snackbar.with(this).text(getString(LocalTorrent.getResourceForDaemonException(result.getException())))
-				.colorResource(R.color.red));
+		SnackbarHelper.show(this, LocalTorrent.getResourceForDaemonException(result.getException()), R.color.red);
 	}
 
 	@UiThread
