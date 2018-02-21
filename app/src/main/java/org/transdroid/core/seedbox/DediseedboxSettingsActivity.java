@@ -30,7 +30,6 @@ import org.androidannotations.annotations.OptionsMenu;
 import org.transdroid.R;
 import org.transdroid.core.gui.settings.KeyBoundPreferencesActivity;
 import org.transdroid.core.gui.settings.MainSettingsActivity_;
-import org.transdroid.daemon.Daemon;
 
 /**
  * Activity that allows for the configuration of a Dediseedbox seedbox. The key can be supplied to update an
